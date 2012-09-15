@@ -23,10 +23,10 @@ logic z_trn;
 int z_tmg;
 
 // valid is active if there is data in the queue
-assign z_vld = (qd_cnt > 0);
+assign z_vld = (qb_cnt > 0);
 
 // queue read pointer points to stream data
-assign z_bus = qd_buf [qd_rpt];
+assign z_bus = qb_buf [qb_rpt];
 
 // stream transfer event
 assign z_trn = z_vld & z_rdy;
@@ -40,19 +40,19 @@ else if (z_vld)  z_tmg <= z_rdy ? 0 : z_tmg + 1;
 // bus data queue
 ////////////////////////////////////////////////////////////////////////////////
 
-logic [BW-1:0] qd_buf [0:QL-1];
-int qd_cnt = 0;
-int qd_wpt = 0;
-int qd_rpt = 0;
+logic [BW-1:0] qb_buf [0:QL-1];
+int qb_cnt = 0;
+int qb_wpt = 0;
+int qb_rpt = 0;
 
 // queue 
 always @(posedge rst, posedge clk)
 if (rst) begin
-  qd_cnt <= 0;
-  qd_rpt <= qd_wpt;
+  qb_cnt <= 0;
+  qb_rpt <= qb_wpt;
 end else if (z_trn) begin
-  qd_cnt <=  qd_cnt - 1;
-  qd_rpt <= (qd_rpt + 1) % QL;
+  qb_cnt <=  qb_cnt - 1;
+  qb_rpt <= (qb_rpt + 1) % QL;
 end
 
 // 
@@ -62,12 +62,12 @@ task put_bus (
 );
 begin
   // report queue overflow
-  sts = (qd_cnt > QL);
+  sts = (qb_cnt > QL);
   // put new bus data into the queue
   if (sts) begin
-    qd_buf [qd_wpt] = bus;
-    qd_cnt =  qd_cnt + 1;
-    qd_wpt = (qd_wpt + 1) % QL;
+    qb_buf [qb_wpt] = bus;
+    qb_cnt =  qb_cnt + 1;
+    qb_wpt = (qb_wpt + 1) % QL;
   end
 end
 endtask
@@ -89,11 +89,11 @@ if (rst) begin
 end else if (z_trn) begin
   qt_cnt <=  qt_cnt + 1;
   qt_wpt <= (qt_wpt + 1) % QL;
-  qt_buf <= z_tmg;
+  qt_buf [qt_wpt] <= z_tmg;
 end
 
 task get_tmg (
-  output int sts
+  output int sts,
   output int tmg
 );
 begin
@@ -106,6 +106,6 @@ begin
     qt_rpt = (qt_rpt + 1) % QL;
   end
 end
-endfunction
+endtask
 
 endmodule

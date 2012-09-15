@@ -1,4 +1,4 @@
-module zstr_src #(
+module zstr_drn #(
   // bus
   parameter BW = 1,             // bus width
   parameter XZ = 1'bx,          // bus idle state
@@ -16,40 +16,53 @@ module zstr_src #(
 );
 
 ////////////////////////////////////////////////////////////////////////////////
+// z stream
+////////////////////////////////////////////////////////////////////////////////
+
+// valid is active if there is data in the queue
+assign z_rdy = (qt_cnt > 0);
+
+// queue read pointer points to stream data
+assign z_tmg = qt_buf [qt_rpt];
+
+// stream transfer event
+assign z_trn = z_vld & z_rdy;
+
+////////////////////////////////////////////////////////////////////////////////
 // bus data queue
 ////////////////////////////////////////////////////////////////////////////////
 
-logic [BW-1:0] qf_buf [0:QL-1];
-int            qf_cnt = 0;
-int            qf_wpt = 0;
-int            qf_rpt = 0;
+logic [BW-1:0] qb_buf [0:QL-1];
+int            qb_cnt = 0;
+int            qb_wpt = 0;
+int            qb_rpt = 0;
 
 // write new bus data into the queue
 always @(posedge rst, posedge clk)
 if (rst) begin
-  qf_cnt <= 0;
-  qf_wpt <= qf_rpt;
+  qb_cnt <= 0;
+  qb_wpt <= qb_rpt;
 end else if (z_trn) begin
-  qf_cnt <=  qf_cnt + 1;
-  qf_wpt <= (qf_wpt + 1) % QL;
+  qb_cnt <=  qb_cnt + 1;
+  qb_wpt <= (qb_wpt + 1) % QL;
 end
 
 // read 
 task get_bus (
-  output int            sts
+  output int            sts,
   output logic [BW-1:0] bus
 );
 begin
   // report queue overflow
-  sts = (qf_cnt == 0);
+  sts = (qb_cnt == 0);
   // get timing from the queue
   if (sts) begin
-    tmg = qf_buf [qf_rpt];
-    qf_cnt =  qf_cnt - 1;
-    qf_rpt = (qf_rpt + 1) % QL;
+    bus = qb_buf [qb_rpt];
+    qb_cnt =  qb_cnt - 1;
+    qb_rpt = (qb_rpt + 1) % QL;
   end
 end
-endfunction
+endtask
 
 ////////////////////////////////////////////////////////////////////////////////
 // timing queue
@@ -84,18 +97,5 @@ begin
   end
 end
 endtask
-
-////////////////////////////////////////////////////////////////////////////////
-// z stream
-////////////////////////////////////////////////////////////////////////////////
-
-// valid is active if there is data in the queue
-assign z_vld = (q_cnt > 0);
-
-// queue read pointer points to stream data
-assign z_bus = q_buf [q_rpt];
-
-// stream transfer event
-assign z_trn = z_vld & z_rdy;
 
 endmodule
