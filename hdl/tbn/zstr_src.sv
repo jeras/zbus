@@ -3,8 +3,7 @@ module zstr_src #(
   parameter BW = 1,             // bus width
   parameter XZ = 1'bx,          // bus idle state
   // queue
-  parameter QL = 1,             // queue length
-  parameter QW = $clog2(QL)     // queue address width
+  parameter QL = 1              // queue length
 )(
   // system signals
   input  logic          clk,    // system clock
@@ -14,6 +13,8 @@ module zstr_src #(
   output logic [BW-1:0] z_bus,  // grouped bus signals
   input  logic          z_rdy   // transfer ready
 );
+
+localparam QW = $clog2(QL);     // queue address width
 
 ////////////////////////////////////////////////////////////////////////////////
 // z stream

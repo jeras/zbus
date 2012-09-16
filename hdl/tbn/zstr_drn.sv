@@ -3,8 +3,7 @@ module zstr_drn #(
   parameter BW = 1,             // bus width
   parameter XZ = 1'bx,          // bus idle state
   // queue
-  parameter QL = 1,             // queue length
-  parameter QW = $clog2(QL)     // queue address width
+  parameter QL = 1              // queue length
 )(
   // system signals
   input  logic          clk,    // system clock
@@ -14,6 +13,8 @@ module zstr_drn #(
   input  logic [BW-1:0] z_bus,  // grouped bus signals
   output logic          z_rdy   // transfer ready
 );
+
+localparam QW = $clog2(QL);     // queue address width
 
 ////////////////////////////////////////////////////////////////////////////////
 // z stream
@@ -55,7 +56,7 @@ task get_bus (
 begin
   // report queue overflow
   sts = (qb_cnt == 0);
-  // get timing from the queue
+  // get new bus data from the queue
   if (sts) begin
     bus = qb_buf [qb_rpt];
     qb_cnt =  qb_cnt - 1;
@@ -82,16 +83,16 @@ end else if (z_trn) begin
   qt_rpt <= (qt_rpt + 1) % QL;
 end
 
-task put_dat (
+task put_tmg (
   output int            sts,  // status
-  input  logic [BW-1:0] bus   // bus data
+  input  logic [BW-1:0] tmg   // timing
 );
 begin
   // report queue overflow
   sts = (qt_cnt > QL);
-  // put new bus data into the queue
+  // put timing into the queue
   if (sts) begin
-    qt_buf [qt_wpt] = bus;
+    qt_buf [qt_wpt] = tmg;
     qt_cnt =  qt_cnt + 1;
     qt_wpt = (qt_wpt + 1) % QL;
   end
